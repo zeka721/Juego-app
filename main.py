@@ -181,20 +181,32 @@ except Exception:
 
 
 class Ventana:
-    """En el telefono se dibuja en un lienzo de 1280x720 y se estira a la pantalla, con barras si hace falta."""
+    """Pantalla logica de 1280x720.
+
+    Telefono: pygame.SCALED deja que la GPU estire la imagen (sin reescalar cada cuadro por CPU, que era lo
+    que hacia lento el juego). Si el sistema no acepta SCALED, se usa la via antigua por CPU (cpu=True).
+    """
 
     def __init__(self):
+        self.cpu = False
+        self.puntero = (ANCHO / 2, ALTO / 2)
         if ES_ANDROID:
+            try:
+                self.pantalla = pygame.display.set_mode((ANCHO, ALTO), pygame.SCALED | pygame.FULLSCREEN)
+                self.lienzo = self.pantalla
+                return
+            except pygame.error:
+                pass
+            self.cpu = True
             self.pantalla = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
             self.lienzo = pygame.Surface((ANCHO, ALTO)).convert()
+            self._geom()
         else:
             try:
                 self.pantalla = pygame.display.set_mode((ANCHO, ALTO), pygame.SCALED | pygame.RESIZABLE)
             except pygame.error:
                 self.pantalla = pygame.display.set_mode((ANCHO, ALTO))
             self.lienzo = self.pantalla
-        self.puntero = (ANCHO / 2, ALTO / 2)
-        self._geom()
 
     def _geom(self):
         w, h = pygame.display.get_surface().get_size()
@@ -204,14 +216,12 @@ class Ventana:
         self._tam = (w, h)
 
     def a_logico(self, x, y):
-        if not ES_ANDROID:
-            return (x, y)
         return (max(0.0, min(ANCHO, (x - self.ox) / self.e)), max(0.0, min(ALTO, (y - self.oy) / self.e)))
 
     def eventos(self):
-        """Eventos con la posicion ya en coordenadas del juego (y los dedos tratados como raton)."""
+        """Con SCALED, pygame ya da los toques en coordenadas logicas. Solo la via CPU necesita convertir."""
         crudos = pygame.event.get()
-        if not ES_ANDROID:
+        if not self.cpu:
             return crudos
         w, h = self._tam
         hay_boton = any(e.type == pygame.MOUSEBUTTONDOWN for e in crudos)
@@ -226,7 +236,7 @@ class Ventana:
             elif ev.type in (pygame.FINGERDOWN, pygame.FINGERMOTION, pygame.FINGERUP):
                 pos = self.a_logico(ev.x * w, ev.y * h)
                 self.puntero = pos
-                if ev.type == pygame.FINGERDOWN and not hay_boton:      # por si el sistema no hace el toque-raton
+                if ev.type == pygame.FINGERDOWN and not hay_boton:
                     salida.append(pygame.event.Event(pygame.MOUSEBUTTONDOWN,
                                                      {"pos": (int(pos[0]), int(pos[1])), "button": 1}))
             else:
@@ -234,13 +244,39 @@ class Ventana:
         return salida
 
     def presentar(self):
-        if ES_ANDROID:
+        if self.cpu:
             p = pygame.display.get_surface()
             if p.get_size() != self._tam:
                 self._geom()
             p.fill((0, 0, 0))
             p.blit(pygame.transform.scale(self.lienzo, (self.tw, self.th)), (self.ox, self.oy))
         pygame.display.flip()
+
+
+def precalentar_tama(ventana):
+    """Genera antes de empezar los huevos y las 72 mascotas (la primera vez tardan y dan tirones).
+    Se hace en la pantalla de carga, con barra de progreso, y queda en cache."""
+    import arte_tama as AT
+    lista = [("huevo", k) for k in range(18)] + [("mascota", (e, et)) for e in AT.ESPECIES for et in range(4)]
+    S = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    t0 = time.time()
+    for i, (tipo, dato) in enumerate(lista):
+        if tipo == "huevo":
+            AT.dibujar_huevo(S, dato, ANCHO // 2, ALTO // 2, 1.0, 0.0)
+        else:
+            AT.dibujar_mascota(S, dato[0], dato[1], ANCHO // 2, ALTO // 2, 1.0, 0.0)
+        if i % 6 == 0 or i == len(lista) - 1:
+            ventana.lienzo.fill((20, 60, 90))
+            ancho_barra = 600
+            frac = (i + 1) / len(lista)
+            pygame.draw.rect(ventana.lienzo, (255, 255, 255), (ANCHO // 2 - 300, ALTO // 2 + 40, ancho_barra, 24), 3, 8)
+            pygame.draw.rect(ventana.lienzo, (255, 200, 90), (ANCHO // 2 - 296, ALTO // 2 + 44, int((ancho_barra - 8) * frac), 16), border_radius=6)
+            f = pygame.font.Font(None, 48)
+            ventana.lienzo.blit(f.render("Preparando a tus mascotas...", True, (255, 255, 255)),
+                                f.render("Preparando a tus mascotas...", True, (0, 0, 0)).get_rect(center=(ANCHO // 2, ALTO // 2 - 30)).topleft)
+            ventana.presentar()
+            pygame.event.pump()
+    registrar(f"PASO precalentado tamagotchi: {len(lista)} dibujos en {time.time() - t0:.1f}s")
 
 
 def paso(ventana, texto):
@@ -254,7 +290,7 @@ def paso(ventana, texto):
         ventana.lienzo.blit(f.render("Arranque: " + texto, True, (255, 255, 255)), (40, ALTO // 2 - 20))
         ventana.presentar()
         pygame.event.pump()
-        time.sleep(0.4)
+        time.sleep(0.12)
     except Exception:
         pass
 
@@ -270,7 +306,7 @@ def main(max_cuadros=None, cada_cuadro=None):
         ventana = Ventana()
         pygame.display.set_caption("Ninja Mundo")
         pygame.mouse.set_visible(False)
-        if ES_ANDROID:
+        if ES_ANDROID and ventana.cpu:
             pygame.mouse.get_pos = lambda: (int(ventana.puntero[0]), int(ventana.puntero[1]))
         paso(ventana, "3 pantalla lista " + str(pygame.display.get_surface().get_size()))
 
@@ -291,10 +327,8 @@ def main(max_cuadros=None, cada_cuadro=None):
         paso(ventana, "6 fuentes listas")
         sonidos = Sonidos()
         paso(ventana, "7 sonidos listos")
-        ventana.lienzo.fill((20, 60, 90))
-        escribir(ventana.lienzo, fuentes.grande, "Preparando a tu mascota...", ANCHO / 2, ALTO / 2, (255, 255, 255))
-        ventana.presentar()
         if SOLO_TAMA:
+            precalentar_tama(ventana)
             app = AppTama(entrada, sonidos, fuentes)
         elif JUEGO:
             app = AppSolo(entrada, sonidos, fuentes, JUEGO)
