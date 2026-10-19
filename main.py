@@ -253,6 +253,77 @@ class Ventana:
         pygame.display.flip()
 
 
+def prueba_velocidad(ventana):
+    """Mide cuanto tarda el telefono en cada tipo de operacion y lo muestra en pantalla (unos 5 s)."""
+    import math as _m
+    S = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    resultados = []
+
+    def medir(nombre, fn, veces):
+        t0 = time.perf_counter()
+        fn()
+        ms = (time.perf_counter() - t0) * 1000.0
+        resultados.append(f"{nombre}: {ms:.0f} ms ({ms / veces:.3f} ms por vez)")
+
+    def python_puro():
+        s_ = 0.0
+        for i in range(300000):
+            s_ += _m.sin(i * 0.001) * 0.5
+    medir("bucle de Python (300.000 vueltas)", python_puro, 300000)
+
+    def crear():
+        for _ in range(300):
+            pygame.Surface((100, 100), pygame.SRCALPHA)
+    medir("crear 300 superficies 100x100", crear, 300)
+
+    capa = pygame.Surface((100, 100), pygame.SRCALPHA)
+    capa.fill((200, 80, 80, 150))
+    def blit_chico():
+        for i in range(1000):
+            S.blit(capa, (i % 1100, (i * 7) % 600))
+    medir("1000 pegados 100x100 con transparencia", blit_chico, 1000)
+
+    def velo_grande():
+        v = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+        v.fill((20, 15, 40, 120))
+        for _ in range(10):
+            S.blit(v, (0, 0))
+    medir("10 velos de pantalla completa", velo_grande, 10)
+
+    def circulos():
+        for i in range(1000):
+            pygame.draw.circle(S, (200, 100, 50), (i % 1200, (i * 3) % 700), 20)
+    medir("1000 circulos", circulos, 1000)
+
+    def escalar():
+        base = pygame.Surface((200, 200), pygame.SRCALPHA)
+        for _ in range(50):
+            pygame.transform.smoothscale(base, (400, 400))
+    medir("50 escalados suaves 200->400", escalar, 50)
+
+    f = pygame.font.Font(None, 40)
+    def textos():
+        for i in range(200):
+            f.render(f"texto {i}", True, (255, 255, 255))
+    medir("200 textos nuevos", textos, 200)
+
+    ventana.lienzo.fill((20, 40, 60))
+    y = 30
+    for linea in resultados:
+        img = f.render(linea, True, (255, 255, 255))
+        ventana.lienzo.blit(img, (30, y))
+        y += 40
+        registrar("BENCH " + linea)
+    ventana.presentar()
+    fin = time.time() + 12
+    pygame.event.clear()
+    while time.time() < fin:
+        for ev in pygame.event.get():
+            if ev.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN):
+                return
+        time.sleep(0.05)
+
+
 def precalentar_tama(ventana):
     """Genera antes de empezar los huevos y las 72 mascotas (la primera vez tardan y dan tirones).
     Se hace en la pantalla de carga, con barra de progreso, y queda en cache."""
@@ -341,6 +412,8 @@ def main(max_cuadros=None, cada_cuadro=None):
         sonidos = Sonidos()
         paso(ventana, "7 sonidos listos")
         if SOLO_TAMA:
+            if DIAG:
+                prueba_velocidad(ventana)
             precalentar_tama(ventana)
             app = AppTama(entrada, sonidos, fuentes)
         elif JUEGO:
