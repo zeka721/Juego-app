@@ -9,15 +9,60 @@ Ajustes (puerto, sensibilidad, etc.): ajustes.py
 import os
 import sys
 import time
+import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import pygame
 
-from ajustes import ANCHO, ALTO, ES_ANDROID
-from aventura import Aplicacion
-from entrada import Entrada
-from nucleo import Fuentes, Sonidos, escribir
+def _carpeta_datos():
+    return os.environ.get("ANDROID_PRIVATE") or os.path.dirname(os.path.abspath(__file__))
+
+
+def mostrar_error(texto, segundos=300):
+    """Muestra un error en pantalla (en el telefono no se ve la consola) y lo guarda en error.log."""
+    print(texto)
+    try:
+        with open(os.path.join(_carpeta_datos(), "error.log"), "w", encoding="utf-8") as f:
+            f.write(texto)
+    except Exception:
+        pass
+    try:
+        import pygame
+        pygame.init()
+        pantalla = pygame.display.set_mode((1280, 720))
+        fuente = pygame.font.Font(None, 28)
+        pantalla.fill((40, 0, 0))
+        lineas = []
+        for linea in texto.splitlines():
+            while len(linea) > 120:
+                lineas.append(linea[:120])
+                linea = linea[120:]
+            lineas.append(linea)
+        lineas = lineas[-30:]
+        pantalla.blit(fuente.render("ERROR AL INICIAR - toca la pantalla para cerrar", True, (255, 230, 120)), (12, 12))
+        for i, linea in enumerate(lineas):
+            pantalla.blit(fuente.render(linea, True, (255, 220, 220)), (12, 50 + i * 22))
+        pygame.display.flip()
+        fin = time.time() + segundos
+        while time.time() < fin:
+            for ev in pygame.event.get():
+                if ev.type in (pygame.QUIT, pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
+                    return
+            time.sleep(0.05)
+    except Exception:
+        pass
+
+
+try:
+    import pygame
+
+    from ajustes import ANCHO, ALTO, ES_ANDROID
+    from aventura import Aplicacion
+    from entrada import Entrada
+    from nucleo import Fuentes, Sonidos, escribir
+except Exception:
+    mostrar_error("Fallo al cargar los modulos:\n\n" + traceback.format_exc())
+    raise SystemExit(1)
 
 
 def main(max_cuadros=None, cada_cuadro=None):
@@ -78,4 +123,10 @@ def main(max_cuadros=None, cada_cuadro=None):
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception:
+        mostrar_error("Error en el juego:\n\n" + traceback.format_exc())
+        raise
