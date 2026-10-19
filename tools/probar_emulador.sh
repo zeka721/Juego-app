@@ -18,7 +18,10 @@ lanzar() {  # $1 = numero de intento
   sleep 12
   adb exec-out screencap -p > "$OUT/pantalla_$1_12s.png"
   VIVO12=$(adb shell pidof "$PKG" | tr -d '\r')
-  sleep 18
+  adb shell input tap 320 160
+  sleep 2
+  adb shell input swipe 100 100 500 250 400
+  sleep 14
   adb exec-out screencap -p > "$OUT/pantalla_$1_30s.png"
   VIVO30=$(adb shell pidof "$PKG" | tr -d '\r')
   adb logcat -d > "$OUT/logcat_$1.txt"

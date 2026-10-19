@@ -29,6 +29,12 @@ class Pygame2Recipe(CompiledComponentsPythonRecipe):
         super().prebuild_arch(arch)
         with current_directory(self.get_build_dir(arch.arch)):
             setup_template = open(join("buildconfig", "Setup.Android.SDL2.in")).read()
+            # El Setup de Android de pygame 2.6.1 olvida estos fuentes: sin ellos surface.so queda con simbolos
+            # sin definir (alphablit_alpha_sse2_argb_surf_alpha) y 'import pygame.display' falla en el telefono.
+            _viejo = "surface src_c/surface.c"
+            assert _viejo in setup_template, "Setup.Android.SDL2.in cambio de formato"
+            setup_template = setup_template.replace(
+                _viejo, "surface src_c/simd_blitters_sse2.c src_c/simd_blitters_avx2.c src_c/surface.c")
             env = self.get_recipe_env(arch)
             env['ANDROID_ROOT'] = join(self.ctx.ndk.sysroot, 'usr')
 

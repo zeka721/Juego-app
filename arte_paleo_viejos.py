@@ -27,8 +27,11 @@ def _periodico(src):
 
 
 for _f in (AD._mover, AD._pintar_dino):
-    _src = _periodico(inspect.getsource(_f))
-    exec(compile(_src, "<arte_dinos_periodico>", "exec"), _ns)
+    try:
+        _src = _periodico(inspect.getsource(_f))
+        exec(compile(_src, "<arte_dinos_periodico>", "exec"), _ns)
+    except (OSError, TypeError):
+        pass            # sin codigo fuente (Android): se queda la animacion original de arte_dinos
 
 _pintar_dino = _ns["_pintar_dino"]
 HUESOS = AD.HUESOS_POR_DINO
