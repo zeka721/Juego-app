@@ -51,14 +51,15 @@ _MASTER = []
 
 def _master():
     if not _MASTER:
-        import numpy as np
+        # Sin numpy (en Android no esta): discos concentricos, de afuera hacia adentro
         n = 256
-        yy, xx = np.ogrid[:n, :n]
-        d = np.hypot(xx - n / 2 + 0.5, yy - n / 2 + 0.5) / (n / 2)
-        v = (np.clip(1 - d, 0, 1) ** 2.2 * 255).astype(np.uint8)
-        arr = np.empty((n, n, 3), dtype=np.uint8)
-        arr[:, :, 0] = arr[:, :, 1] = arr[:, :, 2] = v
-        _MASTER.append(pygame.surfarray.make_surface(arr))
+        s = pygame.Surface((n, n))
+        s.fill((0, 0, 0))
+        mitad = n // 2
+        for r in range(mitad, 0, -1):
+            v = int(max(0.0, 1.0 - (r - 0.5) / mitad) ** 2.2 * 255)
+            pygame.draw.circle(s, (v, v, v), (mitad, mitad), r)
+        _MASTER.append(s)
     return _MASTER[0]
 
 

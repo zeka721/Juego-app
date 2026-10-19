@@ -291,9 +291,12 @@ class TamagotchiEscena(Escena):
             self._salir()
 
     def _salir(self):
-        from aventura import Libre
         self._guardar()
         self._sonido("click")
+        if getattr(self.app, "solo_tama", False):      # version del telefono: salir = cerrar la app
+            self.app.salir = True
+            return
+        from aventura import Libre
         self.app.ir(Libre(self.app))
 
     def _abrir_libro(self, cual):
@@ -745,6 +748,9 @@ class TamagotchiEscena(Escena):
         self._reset_botones()
 
     def _ir_granja(self):
+        if getattr(self.app, "solo_tama", False):
+            self.avisar("La granja llega muy pronto.", 2.5, (255, 240, 180))
+            return
         from escena_granja import GranjaEscena
         self._guardar()
         self._sonido("click")
@@ -905,6 +911,9 @@ class TamagotchiEscena(Escena):
             return
         if m["hambre"] < 15:
             self.avisar("Tiene mucha hambre. ¡Dale de comer primero!", 3.0, (255, 220, 160))
+            return
+        if getattr(self.app, "solo_tama", False):
+            self.avisar("Las peleas llegan muy pronto.", 2.5, (255, 240, 180))
             return
         self._guardar()
         self._sonido("click")

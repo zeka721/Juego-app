@@ -477,6 +477,8 @@ class Entrada(ControlBase):
                     self.usar_mando = not self.usar_mando
             elif ev.type == pygame.MOUSEBUTTONDOWN:
                 if ev.button == 1:
+                    if not (self.usar_mando and mando is not None and mando.conectado):
+                        self.pos = V2(ev.pos)          # toque: el cursor aparece justo en el dedo
                     self._accion(ahora)
                 elif ev.button == 3:
                     self.golpe = True

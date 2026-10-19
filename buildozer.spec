@@ -14,7 +14,7 @@ source.exclude_dirs = pruebas,firmware,dataset_defensa_espacial,.venv,.idea,__py
 source.exclude_patterns = partida.json,calibracion_*.json,test_*.py,*.patch,*.ino
 
 # ---- Librerias para el telefono ----
-requirements = python3,pygame,numpy
+requirements = python3,pygame
 
 # Receta de pygame propia (2.6.1) para compilar con Python moderno
 p4a.local_recipes = ./p4a_recipes

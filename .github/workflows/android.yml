@@ -6,8 +6,15 @@ on:
 
 jobs:
   android:
+    name: APK (Python ${{ matrix.py }})
     runs-on: ubuntu-22.04
     timeout-minutes: 120
+    strategy:
+      fail-fast: false        # si una version de Python falla, la otra sigue compilando
+      matrix:
+        py: ["3.11.5", "3.13.5"]
+    env:
+      NINJA_PY: ${{ matrix.py }}
     steps:
       - name: Descargar el codigo
         uses: actions/checkout@v4
@@ -37,7 +44,7 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: buildozer-${{ hashFiles('buildozer.spec') }}-v2
+          key: buildozer-py${{ matrix.py }}-${{ hashFiles('buildozer.spec', 'p4a_recipes/**') }}-v3
 
       - name: Compilar el APK
         run: |
@@ -46,6 +53,6 @@ jobs:
       - name: Guardar el APK para descargar
         uses: actions/upload-artifact@v4
         with:
-          name: ninja-mundo-apk
+          name: ninja-mundo-apk-python-${{ matrix.py }}
           path: bin/*.apk
           if-no-files-found: error
