@@ -19,6 +19,13 @@ jobs:
             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
             build-essential python3-pip
 
+      - name: Usar Java 17 para Gradle
+        run: |
+          echo "JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64" >> "$GITHUB_ENV"
+          echo "/usr/lib/jvm/temurin-17-jdk-amd64/bin" >> "$GITHUB_PATH"
+          sudo update-alternatives --set java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java || true
+          java -version
+
       - name: Instalar Buildozer y Cython
         run: |
           python3 -m pip install --upgrade pip
