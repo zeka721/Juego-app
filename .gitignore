@@ -1,0 +1,8 @@
+__pycache__/
+.venv/
+.idea/
+bin/
+build/
+partida.json
+calibracion_*.json
+*.patch

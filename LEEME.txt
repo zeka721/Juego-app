@@ -1,0 +1,7 @@
+PESCA v2 (mundos). Copia en tu carpeta del juego, reemplazando:
+NUEVOS: pesca_datos.py, escena_pesca.py
+REEMPLAZAN: j_pesca.py, arte.py, arte_mar.py, aventura.py, escena_items.py
+PRUEBAS (carpeta pruebas/): test_pesca.py, test_pesca_datos.py, test_escena_pesca.py, test_arte_mar.py, test_items.py, test_app.py
+aventura.py incluye todo lo anterior (sin nivel en Cocina, juegos quitados, frutas en tienda) y el MODO_PRUEBA
+(lee ajustes.MODO_PRUEBA si existe; si no, es False).
+catalogo.py y nucleo.py no cambian.
