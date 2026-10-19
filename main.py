@@ -19,7 +19,24 @@ import traceback
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 ES_ANDROID = hasattr(sys, "getandroidapilevel")
-SOLO_TAMA = ES_ANDROID or os.environ.get("NINJA_SOLO_TAMA") == "1"
+
+
+def _juego_solo():
+    """'tama' o 'ruinas' si esta app es de un solo juego; '' = menu completo (PC)."""
+    try:       # tools/armar.py escribe juego.txt dentro del APK
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "juego.txt"), encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception:
+        pass
+    if os.environ.get("NINJA_JUEGO"):
+        return os.environ["NINJA_JUEGO"].strip()
+    if os.environ.get("NINJA_SOLO_TAMA") == "1" or ES_ANDROID:
+        return "tama"
+    return ""
+
+
+JUEGO = _juego_solo()
+SOLO_TAMA = JUEGO == "tama"
 PASOS_VISIBLES = ES_ANDROID          # diagnostico: muestra los pasos del arranque en pantalla
 
 
@@ -141,7 +158,7 @@ def mostrar_error(texto):
 
 # ------------------------------------------------------------------ arranque
 TEXTO_PREVIO = preparar_registro()
-registrar(f"PASO 0 main.py iniciado (android={ES_ANDROID}, python={sys.version.split()[0]})")
+registrar(f"PASO 0 main.py iniciado (android={ES_ANDROID}, juego={JUEGO or 'menu'}, python={sys.version.split()[0]})")
 
 try:
     registrar("PASO 1 importando pygame")
@@ -153,6 +170,8 @@ try:
     from nucleo import Fuentes, Sonidos, escribir
     if SOLO_TAMA:
         from app_tama import AppTama
+    elif JUEGO:
+        from app_solo import AppSolo
     else:
         from aventura import Aplicacion
     registrar("PASO 1c modulos del juego importados")
@@ -275,7 +294,12 @@ def main(max_cuadros=None, cada_cuadro=None):
         ventana.lienzo.fill((20, 60, 90))
         escribir(ventana.lienzo, fuentes.grande, "Preparando a tu mascota...", ANCHO / 2, ALTO / 2, (255, 255, 255))
         ventana.presentar()
-        app = AppTama(entrada, sonidos, fuentes) if SOLO_TAMA else Aplicacion(entrada, sonidos, fuentes)
+        if SOLO_TAMA:
+            app = AppTama(entrada, sonidos, fuentes)
+        elif JUEGO:
+            app = AppSolo(entrada, sonidos, fuentes, JUEGO)
+        else:
+            app = Aplicacion(entrada, sonidos, fuentes)
         paso(ventana, "8 juego listo")
 
         back = getattr(pygame, "K_AC_BACK", None)

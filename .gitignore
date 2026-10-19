@@ -8,3 +8,6 @@ calibracion_*.json
 *.patch
 error.log
 !p4a_recipes/**/*.patch
+stage/
+salida/
+apk/

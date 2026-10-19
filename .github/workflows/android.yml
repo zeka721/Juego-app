@@ -5,16 +5,26 @@ on:
   workflow_dispatch:
 
 jobs:
-  android:
-    name: APK (Python ${{ matrix.py }})
+  apk:
+    name: APK ${{ matrix.app }} py${{ matrix.py }} ${{ matrix.arch }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     strategy:
-      fail-fast: false        # si una version de Python falla, la otra sigue compilando
+      fail-fast: false        # si una combinacion falla, las demas siguen
       matrix:
-        py: ["3.11.5", "3.13.5"]
+        include:
+          # --- para instalar en el telefono (arm64) ---
+          - { app: gusano, py: "3.11.5", arch: arm64-v8a }
+          - { app: gusano, py: "3.13.5", arch: arm64-v8a }
+          - { app: ruinas, py: "3.11.5", arch: arm64-v8a }
+          - { app: ruinas, py: "3.13.5", arch: arm64-v8a }
+          # --- para probar en el emulador de GitHub (x86_64) ---
+          - { app: gusano, py: "3.11.5", arch: x86_64 }
+          - { app: gusano, py: "3.13.5", arch: x86_64 }
+          - { app: ruinas, py: "3.11.5", arch: x86_64 }
     env:
       NINJA_PY: ${{ matrix.py }}
+      NINJA_ARCH: ${{ matrix.arch }}
     steps:
       - name: Descargar el codigo
         uses: actions/checkout@v4
@@ -38,21 +48,72 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install --upgrade buildozer "cython==0.29.36"
 
-      - name: Cache de Buildozer (SDK y NDK)
+      - name: Armar la carpeta de la app (${{ matrix.app }})
+        run: python3 tools/armar.py ${{ matrix.app }} stage
+
+      - name: Cache de Buildozer (SDK, NDK y Python compilado)
         uses: actions/cache@v4
         with:
           path: |
             ~/.buildozer
-            .buildozer
-          key: buildozer-py${{ matrix.py }}-${{ hashFiles('buildozer.spec', 'p4a_recipes/**') }}-v3
+            stage/.buildozer
+          key: bz-py${{ matrix.py }}-${{ matrix.arch }}-${{ hashFiles('buildozer.spec', 'p4a_recipes/**') }}-v4
 
       - name: Compilar el APK
+        working-directory: stage
         run: |
           yes | buildozer -v android debug
 
       - name: Guardar el APK para descargar
         uses: actions/upload-artifact@v4
         with:
-          name: ninja-mundo-apk-python-${{ matrix.py }}
-          path: bin/*.apk
+          name: apk-${{ matrix.app }}-py${{ matrix.py }}-${{ matrix.arch }}
+          path: stage/bin/*.apk
           if-no-files-found: error
+
+  emulador:
+    name: Emulador ${{ matrix.app }} py${{ matrix.py }}
+    needs: apk
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { app: gusano, py: "3.11.5", pkg: org.ninjamundo.gusanoprueba }
+          - { app: gusano, py: "3.13.5", pkg: org.ninjamundo.gusanoprueba }
+          - { app: ruinas, py: "3.11.5", pkg: org.ninjamundo.ninjaruinas }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bajar el APK x86_64
+        uses: actions/download-artifact@v4
+        with:
+          name: apk-${{ matrix.app }}-py${{ matrix.py }}-x86_64
+          path: apk
+
+      - name: Activar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Probar en el emulador de Android
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: default
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash tools/probar_emulador.sh ${{ matrix.pkg }} "${{ matrix.app }}-py${{ matrix.py }}"
+
+      - name: Guardar capturas y registros
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prueba-emulador-${{ matrix.app }}-py${{ matrix.py }}
+          path: salida/
+          if-no-files-found: ignore
