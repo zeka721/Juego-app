@@ -279,6 +279,19 @@ def precalentar_tama(ventana):
     registrar(f"PASO precalentado tamagotchi: {len(lista)} dibujos en {time.time() - t0:.1f}s")
 
 
+DIAG = ES_ANDROID or os.environ.get("NINJA_DIAG") == "1"   # contador en pantalla (para medir el telefono)
+
+
+def _dibujar_diag(lienzo, fuentes, diag):
+    txt = diag.get("txt", "midiendo...")
+    f = pygame.font.Font(None, 30)
+    img = f.render(txt, True, (255, 255, 255))
+    fondo = pygame.Surface((img.get_width() + 12, img.get_height() + 6), pygame.SRCALPHA)
+    fondo.fill((0, 0, 0, 170))
+    lienzo.blit(fondo, (6, 6))
+    lienzo.blit(img, (12, 9))
+
+
 def paso(ventana, texto):
     """Anota el paso y, si PASOS_VISIBLES, lo deja ver en pantalla un instante."""
     registrar("PASO " + texto)
@@ -339,8 +352,10 @@ def main(max_cuadros=None, cada_cuadro=None):
         back = getattr(pygame, "K_AC_BACK", None)
         mostrar_diag = False
         cuadros = 0
+        diag = {"n": 0, "act": 0.0, "dib": 0.0, "flip": 0.0, "ini": time.perf_counter(), "t": 0.0, "fps": 0}
         while not app.salir:
             dt = min(reloj.tick(60) / 1000.0, 0.05)
+            t_ini = time.perf_counter()
             eventos = ventana.eventos()
             for ev in eventos:
                 if ev.type == pygame.QUIT:
@@ -362,8 +377,10 @@ def main(max_cuadros=None, cada_cuadro=None):
             entrada.actualizar(dt, eventos)
             if not entrada.calibrando:           # el juego se pausa mientras se calibra
                 app.actualizar(dt, entrada)
+            t_act = time.perf_counter()
             lienzo = ventana.lienzo
             app.dibujar(lienzo)
+            t_dib = time.perf_counter()
             entrada.dibujar_cursor(lienzo)
             if not ES_ANDROID:
                 entrada.dibujar_aviso_cal(lienzo, fuentes.normal)
@@ -374,7 +391,24 @@ def main(max_cuadros=None, cada_cuadro=None):
                     estado = entrada.lineas_diagnostico()[0]
                     if entrada.mando is None or not entrada.mando.conectado or entrada.mando.lecturas == 0:
                         escribir(lienzo, fuentes.chica, estado[:120], 12, ALTO - 14, (255, 220, 160), ancla="izq")
+            if DIAG:
+                _dibujar_diag(lienzo, fuentes, diag)
             ventana.presentar()
+            t_fin = time.perf_counter()
+            diag["n"] += 1
+            diag["act"] += t_act - t_ini
+            diag["dib"] += t_dib - t_act
+            diag["flip"] += t_fin - t_dib
+            if t_fin - diag["t"] >= 1.0 or diag["t"] == 0.0:
+                if diag["t"]:
+                    n = max(1, diag["n"])
+                    diag["fps"] = round(diag["n"] / (t_fin - diag["t"]))
+                    diag["txt"] = (f"{diag['fps']} fps | actualizar {diag['act']/n*1000:.1f} ms | "
+                                   f"dibujar {diag['dib']/n*1000:.1f} ms | pantalla {diag['flip']/n*1000:.1f} ms")
+                    registrar("DIAG " + diag["txt"])
+                    diag["n"] = 0
+                    diag["act"] = diag["dib"] = diag["flip"] = 0.0
+                diag["t"] = t_fin
             if cuadros == 0:
                 registrar("PASO 9 primer cuadro del juego dibujado")
             elif cuadros == 120:

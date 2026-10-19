@@ -163,21 +163,39 @@ def barra_bonita(p, rect, frac, c0, c1, fondo=(52, 56, 88), borde=(255, 255, 255
     pygame.draw.rect(p, borde, rect, 2, border_radius=rad)
 
 
+_tarjetas = {}
+
+
 def tarjeta(p, rect, color=(255, 255, 255), alfa=225, radio=24, borde=(110, 90, 140), grosor=3, sombra=True):
+    """Dibuja una tarjeta redondeada. Se arma una sola vez por tamano/colores y luego solo se copia."""
     rect = pygame.Rect(rect)
-    if sombra:
+    clave = (rect.w, rect.h, tuple(color), int(alfa), radio, tuple(borde), grosor, bool(sombra))
+    s = _tarjetas.get(clave)
+    if s is None:
+        if len(_tarjetas) > 200:
+            _tarjetas.clear()
         s = pygame.Surface((rect.w + 12, rect.h + 12), pygame.SRCALPHA)
-        pygame.draw.rect(s, (20, 10, 40, 70), (6, 8, rect.w, rect.h), border_radius=radio)
-        p.blit(s, (rect.x - 6, rect.y - 2))
-    s = pygame.Surface(rect.size, pygame.SRCALPHA)
-    pygame.draw.rect(s, color + (alfa,), s.get_rect(), border_radius=radio)
-    pygame.draw.rect(s, borde + (255,), s.get_rect(), grosor, border_radius=radio)
-    p.blit(s, rect.topleft)
+        if sombra:
+            pygame.draw.rect(s, (20, 10, 40, 70), (6, 8, rect.w, rect.h), border_radius=radio)
+        tarjeta_s = pygame.Surface(rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(tarjeta_s, tuple(color) + (int(alfa),), tarjeta_s.get_rect(), border_radius=radio)
+        pygame.draw.rect(tarjeta_s, tuple(borde) + (255,), tarjeta_s.get_rect(), grosor, border_radius=radio)
+        s.blit(tarjeta_s, (6, 2))
+        _tarjetas[clave] = s
+    p.blit(s, (rect.x - 6, rect.y - 2))
+
+
+_velos = {}
 
 
 def velo(p, alfa=120, color=(20, 15, 40)):
-    s = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
-    s.fill(color + (int(alfa),))
+    clave = (int(alfa), tuple(color))
+    s = _velos.get(clave)
+    if s is None:
+        if len(_velos) > 20:
+            _velos.clear()
+        s = _velos[clave] = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+        s.fill(tuple(color) + (int(alfa),))
     p.blit(s, (0, 0))
 
 

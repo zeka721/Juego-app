@@ -112,24 +112,42 @@ def fondo(pantalla, arriba=(120, 190, 255), abajo=(215, 240, 255)):
     pantalla.blit(sup, (0, 0))
 
 
+_textos = {}
+
+
+def _texto_armado(fuente, texto, color, contorno, grosor):
+    """Texto (y su contorno) dibujado una sola vez en una superficie con transparencia."""
+    g = grosor if contorno else 0
+    clave = (fuente, str(texto), tuple(color), tuple(contorno) if contorno else None, g)
+    s = _textos.get(clave)
+    if s is None:
+        if len(_textos) > 400:
+            _textos.clear()
+        base = fuente.render(str(texto), True, color)
+        s = pygame.Surface((base.get_width() + 2 * g, base.get_height() + 2 * g), pygame.SRCALPHA)
+        if contorno:
+            sombra = fuente.render(str(texto), True, contorno)
+            for dx in range(-grosor, grosor + 1):
+                for dy in range(-grosor, grosor + 1):
+                    if dx or dy:
+                        s.blit(sombra, (g + dx, g + dy))
+        s.blit(base, (g, g))
+        _textos[clave] = s
+    return s, g
+
+
 def escribir(pantalla, fuente, texto, x, y, color=(255, 255, 255), ancla="centro",
              contorno=(30, 30, 50), grosor=2):
     """Texto con contorno para que se lea sobre cualquier fondo."""
-    base = fuente.render(str(texto), True, color)
-    ancho, alto = base.get_size()
+    s, g = _texto_armado(fuente, texto, color, contorno, grosor)
+    ancho, alto = s.get_width() - 2 * g, s.get_height() - 2 * g
     if ancla == "centro":
         px, py = x - ancho / 2, y - alto / 2
     elif ancla == "izq":
         px, py = x, y - alto / 2
     else:                                   # der
         px, py = x - ancho, y - alto / 2
-    if contorno:
-        sombra = fuente.render(str(texto), True, contorno)
-        for dx in range(-grosor, grosor + 1):
-            for dy in range(-grosor, grosor + 1):
-                if dx or dy:
-                    pantalla.blit(sombra, (px + dx, py + dy))
-    pantalla.blit(base, (px, py))
+    pantalla.blit(s, (px - g, py - g))
     return pygame.Rect(px, py, ancho, alto)
 
 
