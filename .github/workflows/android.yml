@@ -7,20 +7,38 @@ on:
 jobs:
   android:
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - name: Descargar el codigo
         uses: actions/checkout@v4
 
-      - name: Compilar el APK con Buildozer
-        id: buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
+      - name: Instalar dependencias del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
+            build-essential python3-pip
+
+      - name: Instalar Buildozer y Cython
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade buildozer "cython==0.29.36"
+
+      - name: Cache de Buildozer (SDK y NDK)
+        uses: actions/cache@v4
         with:
-          workdir: .
-          buildozer_version: stable
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: buildozer-${{ hashFiles('buildozer.spec') }}-v2
+
+      - name: Compilar el APK
+        run: |
+          yes | buildozer -v android debug
 
       - name: Guardar el APK para descargar
         uses: actions/upload-artifact@v4
         with:
           name: ninja-mundo-apk
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: bin/*.apk
+          if-no-files-found: error
