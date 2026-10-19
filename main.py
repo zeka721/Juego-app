@@ -18,6 +18,15 @@ def _carpeta_datos():
     return os.environ.get("ANDROID_PRIVATE") or os.path.dirname(os.path.abspath(__file__))
 
 
+def registrar(texto):
+    """Anota una linea en error.log (sirve para diagnosticar en el telefono)."""
+    try:
+        with open(os.path.join(_carpeta_datos(), "error.log"), "a", encoding="utf-8") as f:
+            f.write(texto + "\n")
+    except Exception:
+        pass
+
+
 def mostrar_error(texto, segundos=300):
     """Muestra un error en pantalla (en el telefono no se ve la consola) y lo guarda en error.log."""
     print(texto)
@@ -87,6 +96,7 @@ def main(max_cuadros=None, cada_cuadro=None):
         eventos = pygame.event.get()
         for ev in eventos:
             if ev.type == pygame.QUIT:
+                registrar(f"QUIT recibido en el cuadro {cuadros} (tiempo {time.time():.1f}) - evento del sistema")
                 app.salir = True
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
