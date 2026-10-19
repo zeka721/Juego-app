@@ -15,7 +15,7 @@ from arte_tama_fx import (COL, glow, destello_estrella, dibujar_ataque_basico, d
 from arte_tama_huevos import dibujar_huevo, dibujar_cascaras
 from arte_tama_iconos import (dibujar_icono_tipo, dibujar_icono_accion, dibujar_caca, dibujar_nube_estado,
                               icono_accion, icono_tipo, COLOR_TIPO as _CT)
-from arte_tama_fondos import dibujar_fondo_hogar, dibujar_fondo_arena, precalentar
+from arte_tama_fondos import dibujar_fondo_hogar, dibujar_fondo_hogar_velado, dibujar_fondo_arena, precalentar
 from nucleo import aclarar, oscurecer
 
 TIPOS = ["agua", "viento", "fuego", "hielo", "tierra", "electrico"]
@@ -78,6 +78,6 @@ def dibujar_mascota(p, especie, etapa, cx, cy, escala=1.0, t=0.0, estado="normal
 __all__ = [
     "TIPOS", "ESPECIES", "TIPO_DE", "COLOR_TIPO", "NOMBRE_TIPO", "ACCIONES", "dibujar_mascota", "dibujar_huevo", "dibujar_cascaras",
     "dibujar_ataque_basico", "dibujar_impacto", "dibujar_carga", "dibujar_ataque_cargado", "dibujar_guia", "puntos_guia",
-    "dibujar_icono_tipo", "dibujar_icono_accion", "dibujar_fondo_hogar", "dibujar_fondo_arena", "dibujar_caca",
+    "dibujar_icono_tipo", "dibujar_icono_accion", "dibujar_fondo_hogar", "dibujar_fondo_hogar_velado", "dibujar_fondo_arena", "dibujar_caca",
     "dibujar_nube_estado", "dibujar_aura_evolucion", "precalentar", "trazo_guia", "DIBUJOS",
 ]

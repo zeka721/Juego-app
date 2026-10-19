@@ -349,8 +349,7 @@ class TamagotchiEscena(Escena):
                 return
 
     def _dibujar_huevos(self, p):
-        AT.dibujar_fondo_hogar(p, self.t, False)
-        velo(p, 125, (255, 245, 225))
+        AT.dibujar_fondo_hogar_velado(p, self.t, False, 125, (255, 245, 225))
         escribir(p, self.f.grande, "Elige un huevo", ANCHO / 2 - 150, 40, (255, 250, 235), contorno=(120, 70, 40), grosor=3)
         escribir(p, fuente(22), "¿Qué mascota habrá dentro? ¡Es un secreto!", ANCHO / 2 - 150, 80, (255, 240, 210),
                  contorno=(120, 70, 40))
@@ -471,8 +470,7 @@ class TamagotchiEscena(Escena):
                 self.avisar("¡Cuídalo mucho!", 2.6, (255, 235, 140))
 
     def _dibujar_eclosion(self, p):
-        AT.dibujar_fondo_hogar(p, self.t, False)
-        velo(p, 60, (90, 50, 20))
+        AT.dibujar_fondo_hogar_velado(p, self.t, False, 60, (90, 50, 20))
         if self.hatch is not None:
             self._dibujar_hatch(p)
             return

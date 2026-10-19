@@ -255,6 +255,29 @@ def dibujar_fondo_hogar(p, t, noche=False):
         s = _hogar_estatico(noche)
         _CACHE[key] = s
     p.blit(s, (0, 0))
+    _hogar_dinamico(p, t, noche)
+
+
+def dibujar_fondo_hogar_velado(p, t, noche, alfa, color):
+    """Igual que dibujar_fondo_hogar pero con un velo de color encima. El velo se hornea UNA vez dentro
+    del fondo estatico (un velo de pantalla completa en cada cuadro es lo mas caro en el telefono)."""
+    key = ("hogar_velado", bool(noche), int(alfa), tuple(color))
+    s = _CACHE.get(key)
+    if s is None:
+        base = _CACHE.get(("hogar", bool(noche)))
+        if base is None:
+            base = _hogar_estatico(noche)
+            _CACHE[("hogar", bool(noche))] = base
+        s = base.copy()
+        v = pygame.Surface(s.get_size(), pygame.SRCALPHA)
+        v.fill(tuple(color) + (int(alfa),))
+        s.blit(v, (0, 0))
+        _CACHE[key] = s
+    p.blit(s, (0, 0))
+    _hogar_dinamico(p, t, noche)
+
+
+def _hogar_dinamico(p, t, noche):
     _estrellas_ventana(p, t, noche)
     # ventana: marco/cruz se repinta sobre el cielo dinamico (barras finas)
     wx, wy, ww, wh = 140, 96, 310, 250
