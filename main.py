@@ -27,6 +27,28 @@ def registrar(texto):
         pass
 
 
+PASOS_VISIBLES = True   # diagnostico: muestra en pantalla hasta donde llega el arranque (poner False al terminar)
+
+
+def paso(texto):
+    """Anota el paso y, si PASOS_VISIBLES, lo muestra en pantalla un momento."""
+    registrar("PASO " + texto)
+    if not PASOS_VISIBLES:
+        return
+    try:
+        import pygame
+        pantalla = pygame.display.get_surface()
+        if pantalla is None:
+            return
+        fuente = pygame.font.Font(None, 44)
+        pantalla.fill((10, 10, 40))
+        pantalla.blit(fuente.render("Arranque: " + texto, True, (255, 255, 255)), (40, 320))
+        pygame.display.flip()
+        time.sleep(0.8)
+    except Exception:
+        pass
+
+
 def mostrar_error(texto, segundos=300):
     """Muestra un error en pantalla (en el telefono no se ve la consola) y lo guarda en error.log."""
     print(texto)
@@ -63,6 +85,7 @@ def mostrar_error(texto, segundos=300):
 
 
 try:
+    registrar("PASO 1 importando modulos")
     import pygame
 
     from ajustes import ANCHO, ALTO, ES_ANDROID
@@ -75,19 +98,27 @@ except Exception:
 
 
 def main(max_cuadros=None, cada_cuadro=None):
+    paso("2 antes de pygame.init")
     pygame.mixer.pre_init(22050, -16, 1, 512)
     pygame.init()
+    paso("3 pygame.init listo")
     try:
         pantalla = pygame.display.set_mode((ANCHO, ALTO), pygame.SCALED | pygame.RESIZABLE)
     except pygame.error:
         pantalla = pygame.display.set_mode((ANCHO, ALTO))
+    paso("4 pantalla lista")
     pygame.display.set_caption("Ninja Mundo")
     pygame.mouse.set_visible(False)
     reloj = pygame.time.Clock()
 
     entrada = Entrada()
+    paso("5 entrada lista")
     fuentes = Fuentes()
-    app = Aplicacion(entrada, Sonidos(), fuentes)
+    paso("6 fuentes listas")
+    sonidos = Sonidos()
+    paso("7 sonidos listos")
+    app = Aplicacion(entrada, sonidos, fuentes)
+    paso("8 aplicacion lista")
     mostrar_diag = False
     cuadros = 0
 
@@ -122,6 +153,8 @@ def main(max_cuadros=None, cada_cuadro=None):
             if not ES_ANDROID and (entrada.mando is None or not entrada.mando.conectado or entrada.mando.lecturas == 0):
                 escribir(pantalla, fuentes.chica, estado[:120], 12, ALTO - 14, (255, 220, 160), ancla="izq")
         pygame.display.flip()
+        if cuadros == 0:
+            paso("9 primer cuadro del juego")
 
         cuadros += 1
         if cada_cuadro:
