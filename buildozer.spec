@@ -16,6 +16,9 @@ source.exclude_patterns = partida.json,calibracion_*.json,test_*.py,*.patch,*.in
 # ---- Librerias para el telefono ----
 requirements = python3,pygame,numpy
 
+# Receta de pygame propia (2.6.1) para compilar con Python moderno
+p4a.local_recipes = ./p4a_recipes
+
 # ---- Pantalla ----
 orientation = landscape
 fullscreen = 1
